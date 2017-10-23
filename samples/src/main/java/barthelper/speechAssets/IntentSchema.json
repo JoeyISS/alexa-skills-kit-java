@@ -4,6 +4,15 @@
       "intent": "GetHolidaysIntent"
     },
     {
+      "intent": "GetTrainTimesIntent",
+      "slots": [
+        {
+          "name": "Location",
+          "type": "AMAZON.LITERAL"
+        }
+      ]
+    },
+    {
       "intent": "AMAZON.HelpIntent"
     },
     {

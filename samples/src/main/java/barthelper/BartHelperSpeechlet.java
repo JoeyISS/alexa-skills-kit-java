@@ -1,13 +1,16 @@
 package barthelper;
 
 import java.io.IOException;
+
 import java.net.URL;
+import java.util.Map;
 import java.util.Scanner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazon.speech.slu.Intent;
+import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.IntentRequest;
 import com.amazon.speech.speechlet.LaunchRequest;
 import com.amazon.speech.speechlet.Session;
@@ -46,6 +49,10 @@ public class BartHelperSpeechlet implements Speechlet {
     private static final String URL_PREFIX = "https://api.bart.gov/api/sched.aspx?json=y&";
     
     private static final String API_KEY = "MW9S-E7SL-26DU-VV8V";
+    
+    private static final String URL_DEPARTURES = "http://bart.crudworks.org/api/departures/";
+    
+    private static final String LOCATION_KEY = "Location";
     
     private static final int MAX_HOLIDAYS = 3;
 
@@ -88,7 +95,20 @@ public class BartHelperSpeechlet implements Speechlet {
 				e.printStackTrace();
 				return getErrorResponse(intent);
 			}
-        } else if ("AMAZON.HelpIntent".equals(intentName)) {
+        } else if("GetTrainTimesIntent".equals(intentName)) {
+        	try {
+				return getBARTTrains(intent);
+			} catch (IOException e) {
+				log.error("Departures IO Error");
+				e.printStackTrace();
+				return getErrorResponse(intent);
+			} catch (JSONException e) {
+				log.error("Departures JSON Error");
+				e.printStackTrace();
+				return getErrorResponse(intent);
+			}
+        }
+          else if ("AMAZON.HelpIntent".equals(intentName)) {
             return getHelpResponse(intent);
         } else if ("AMAZON.StopIntent".equals(intentName)) {
             return getStopResponse(intent);
@@ -116,6 +136,75 @@ public class BartHelperSpeechlet implements Speechlet {
      *            intent for the request
      * @return SpeechletResponse spoken and visual response for the given intent
      */
+    
+    private SpeechletResponse getBARTTrains(Intent intent) throws IOException, JSONException{
+    	
+    	String trainURL = URL_DEPARTURES;
+    	
+    	
+    	log.info("BART trainss URL: " + trainURL);
+    	
+    	URL url = new URL(trainURL);
+    	Scanner scan = new Scanner(url.openStream());
+    	String trainsOutput = new String();
+    	while (scan.hasNext()) {
+    		trainsOutput += scan.nextLine();
+    	}
+    	scan.close();
+    	
+    	String speechOutput = "";
+    	
+    	JSONArray locationsList = new JSONArray(trainsOutput);
+    	
+    	Map<String, Slot> slots = intent.getSlots();
+    	Slot trainsSlot = slots.get(LOCATION_KEY);
+    	String userLocation = trainsSlot.getValue();
+    	
+    	JSONArray theLocationInfo = new JSONArray();
+    	
+    	if(userLocation != null) {
+    		
+    		log.info(userLocation);
+    		
+    		for(int i = 0; i < locationsList.length(); i++) {
+        		JSONObject o = (JSONObject) locationsList.get(i);
+        		if(userLocation.equals(o.getString("name").toLowerCase())) {
+        			theLocationInfo = o.getJSONArray("etd");
+        			break;
+        		}
+        	}
+    		
+    		
+    		
+    		for(int i = 0; i < theLocationInfo.length(); i++) {
+    			JSONObject o = theLocationInfo.getJSONObject(i);
+    			JSONArray oA = o.getJSONArray("estimate");
+    			JSONObject oB = oA.getJSONObject(0);
+    			if(i == theLocationInfo.length() -1) {
+    				speechOutput += "And the train going to " + o.getString("destination")
+        			+ " leaves in " + oB.getInt("minutes") + " minutes from " 
+        			+ " platform " + oB.getInt("platform") + ".";
+    			}else {
+    				speechOutput += "The train going to " + o.getString("destination")
+        			+ " leaves in " + oB.getInt("minutes") + " minutes from " 
+        			+ " platform " + oB.getInt("platform") + ". ";
+    			}
+    		}
+    	}else {
+    		speechOutput = "Sorry, the location you asked is not on the list.";
+    	}
+
+
+    	PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+        outputSpeech.setText(speechOutput);
+
+        SimpleCard card = new SimpleCard();
+        card.setTitle("Upcoming BART Trains");
+        card.setContent(speechOutput);
+
+        return SpeechletResponse.newTellResponse(outputSpeech, card);
+    }
+    
 	private SpeechletResponse getBARTHolidays(Intent intent) throws IOException, JSONException {
     	
     	String command = "holiday";
