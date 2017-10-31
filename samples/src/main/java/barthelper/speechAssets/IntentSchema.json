@@ -13,6 +13,9 @@
       ]
     },
     {
+      "intent": "GetLastStationIntent"
+    },
+    {
       "intent": "AMAZON.HelpIntent"
     },
     {

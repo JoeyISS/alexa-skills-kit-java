@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,8 @@ public class BartHelperSpeechlet implements Speechlet {
     
     private static final String LOCATION_KEY = "Location";
     
+    private static final String LOCAION_ID = "LOCATION";
+    
     private static final int MAX_HOLIDAYS = 3;
 
     @Override
@@ -97,7 +100,7 @@ public class BartHelperSpeechlet implements Speechlet {
 			}
         } else if("GetTrainTimesIntent".equals(intentName)) {
         	try {
-				return getBARTTrains(intent);
+				return getBARTTrains(intent, session);
 			} catch (IOException e) {
 				log.error("Departures IO Error");
 				e.printStackTrace();
@@ -137,7 +140,44 @@ public class BartHelperSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     
-    private SpeechletResponse getBARTTrains(Intent intent) throws IOException, JSONException{
+    private SpeechletResponse getSpeechletResponse(String speechText, String repromptText,
+            boolean isAskResponse) {
+        // Create the Simple card content.
+        SimpleCard card = new SimpleCard();
+        card.setTitle("Session");
+        card.setContent(speechText);
+
+        // Create the plain text output.
+        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+        speech.setText(speechText);
+
+        if (isAskResponse) {
+            // Create reprompt
+            PlainTextOutputSpeech repromptSpeech = new PlainTextOutputSpeech();
+            repromptSpeech.setText(repromptText);
+            Reprompt reprompt = new Reprompt();
+            reprompt.setOutputSpeech(repromptSpeech);
+
+            return SpeechletResponse.newAskResponse(speech, reprompt, card);
+
+        } else {
+            return SpeechletResponse.newTellResponse(speech, card);
+        }
+    }
+    
+    private SpeechletResponse getLastStation(Intent intent, final Session session) throws IOException{
+    	
+    	String speechText;
+    	boolean isAskResponse;
+    	
+    	String lastStation = session.getAttribute(LOCAION_ID);
+    	
+    	if(StringUtils.isNotEmpty(lasStation))
+    	
+    	
+    }
+    
+    private SpeechletResponse getBARTTrains(Intent intent, final Session session) throws IOException, JSONException{
     	
     	String trainURL = URL_DEPARTURES;
     	
@@ -159,6 +199,8 @@ public class BartHelperSpeechlet implements Speechlet {
     	Map<String, Slot> slots = intent.getSlots();
     	Slot trainsSlot = slots.get(LOCATION_KEY);
     	String userLocation = trainsSlot.getValue();
+    	
+    	session.setAttribute(LOCAION_ID, userLocation);
     	
     	JSONArray theLocationInfo = new JSONArray();
     	
@@ -262,7 +304,9 @@ public class BartHelperSpeechlet implements Speechlet {
     	String speechOutput =
                 "With Bart Helper, you can get"
                         + " information about the Bay Area Rapid Transit system."
-                        + " For example, you could say what are the upcoming BART holidays?"
+                        + " For example, you could say what are the upcoming BART holidays? Or"
+                        + " you can say when is the train from Orinda? "
+                        + " You will also be able to locate the last station you asked Alexa."
                         + " Now, what would you like to know?";
                         
 
