@@ -110,6 +110,8 @@ public class BartHelperSpeechlet implements Speechlet {
 				e.printStackTrace();
 				return getErrorResponse(intent);
 			}
+        } else if("GetLastStationIntent".equals(intentName)) {
+        	return getLastStation(intent, session);
         }
           else if ("AMAZON.HelpIntent".equals(intentName)) {
             return getHelpResponse(intent);
@@ -144,7 +146,7 @@ public class BartHelperSpeechlet implements Speechlet {
             boolean isAskResponse) {
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Session");
+        card.setTitle("BART Service");
         card.setContent(speechText);
 
         // Create the plain text output.
@@ -165,22 +167,32 @@ public class BartHelperSpeechlet implements Speechlet {
         }
     }
     
-    private SpeechletResponse getLastStation(Intent intent, final Session session) throws IOException{
+    private SpeechletResponse getLastStation(Intent intent, final Session session){
     	
     	String speechText;
-    	boolean isAskResponse;
     	
-    	String lastStation = session.getAttribute(LOCAION_ID);
+    	boolean isAskedResponse = true;
     	
-    	if(StringUtils.isNotEmpty(lasStation))
+    	String lastStation = (String)session.getAttribute(LOCAION_ID);
     	
+    	if(StringUtils.isNotEmpty(lastStation)) {
+    		speechText = "The last station you asked was " + lastStation +".";
+    	}else {
+    		speechText = "Sorry, you haven't asked me about any station yet.";
+    	}
     	
+    	String repromptText = "   What would you ask me then?";
+    	
+    	speechText += repromptText;
+
+        return getSpeechletResponse(speechText, repromptText, isAskedResponse);
     }
     
     private SpeechletResponse getBARTTrains(Intent intent, final Session session) throws IOException, JSONException{
     	
     	String trainURL = URL_DEPARTURES;
     	
+    	boolean isAskedResponse = true;
     	
     	log.info("BART trainss URL: " + trainURL);
     	
@@ -205,9 +217,7 @@ public class BartHelperSpeechlet implements Speechlet {
     	JSONArray theLocationInfo = new JSONArray();
     	
     	if(userLocation != null) {
-    		
-    		log.info(userLocation);
-    		
+
     		for(int i = 0; i < locationsList.length(); i++) {
         		JSONObject o = (JSONObject) locationsList.get(i);
         		if(userLocation.equals(o.getString("name").toLowerCase())) {
@@ -236,21 +246,19 @@ public class BartHelperSpeechlet implements Speechlet {
     		speechOutput = "Sorry, the location you asked is not on the list.";
     	}
 
+    	String repromptText = "   What would you ask me then?";
+    	
+    	speechOutput += repromptText;
 
-    	PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-        outputSpeech.setText(speechOutput);
-
-        SimpleCard card = new SimpleCard();
-        card.setTitle("Upcoming BART Trains");
-        card.setContent(speechOutput);
-
-        return SpeechletResponse.newTellResponse(outputSpeech, card);
+        return getSpeechletResponse(speechOutput, repromptText, isAskedResponse);
     }
     
 	private SpeechletResponse getBARTHolidays(Intent intent) throws IOException, JSONException {
     	
     	String command = "holiday";
     	String holidayURL = URL_PREFIX + "key=" + API_KEY + "&cmd=" + command;
+    	
+    	boolean isAskedResponse = true;
     	
     	log.info("BART Holidays URL: " + holidayURL);
     	
@@ -284,14 +292,11 @@ public class BartHelperSpeechlet implements Speechlet {
     		}
     	}
     	
-    	PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-        outputSpeech.setText(speechOutput);
+    	String repromptText = "   What would you ask me then?";
+    	
+    	speechOutput += repromptText;
 
-        SimpleCard card = new SimpleCard();
-        card.setTitle("Upcoming BART Holidays");
-        card.setContent(speechOutput);
-
-        return SpeechletResponse.newTellResponse(outputSpeech, card);
+        return getSpeechletResponse(speechOutput, repromptText, isAskedResponse);
     	
 	}
     

@@ -7,7 +7,7 @@ GetHolidaysIntent what are the holidays
 GetHolidaysIntent what the upcoming holidays are
 GetHolidaysIntent what the holidays are
 GetTrainTimesIntent when are the trains from {Location}
-GetTrainTimeSIntent when is the train from {Location}
+GetTrainTimesIntent when is the train from {Location}
 GetLastStationIntent what was the last station I said
 GetLastStationIntent what was the last station
 GetLastStationIntent what was the last station I asked
